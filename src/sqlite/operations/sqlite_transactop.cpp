@@ -96,5 +96,6 @@ SqQuery *TSQLiteTransactOp::DoQuery(const char *query)
         pQuery->Destroy();
         return nullptr;
     }
+    pQuery->FinalizeStatement();
     return pQuery;
 }

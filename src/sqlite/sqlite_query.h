@@ -23,6 +23,7 @@ public: // IQuery
     }
 
     bool Execute();
+    void FinalizeStatement();
     void Destroy();
 
 public: // IPreparedQuery

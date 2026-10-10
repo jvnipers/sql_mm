@@ -62,6 +62,14 @@ bool SqQuery::Execute()
     return (m_LastErrorCode == SQLITE_OK);
 }
 
+// Results are copied out during Execute(), so the statement isn't needed afterwards. Finalizing it here, on the
+// worker thread, keeps the game thread from waiting on the connection mutex when the query is freed.
+void SqQuery::FinalizeStatement()
+{
+    sqlite3_finalize(m_pStmt);
+    m_pStmt = nullptr;
+}
+
 void SqQuery::Destroy()
 {
     delete this;

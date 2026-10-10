@@ -21,7 +21,9 @@ void TSQLiteQueryOp::RunThreadPart()
         strncopy(m_szError, m_pQuery->GetError(), sizeof(m_szError));
         m_pQuery->Destroy();
         m_pQuery = nullptr;
+        return;
     }
+    m_pQuery->FinalizeStatement();
 }
 
 void TSQLiteQueryOp::CancelThinkPart()
