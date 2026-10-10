@@ -329,15 +329,17 @@ void SqResults::PushResult()
         else if (row[i].type == SQLITE_TEXT)
         {
             const char *str = (const char *)sqlite3_column_text(m_pStmt, i);
+            int bytes = sqlite3_column_bytes(m_pStmt, i);
             if (str)
             {
-                row[i].u.idx = m_Strings.AddString(str);
+                // Copy by length: TEXT may contain NUL bytes, and GetString reports the full size.
+                row[i].u.idx = m_Strings.AddString(str, bytes);
             }
             else
             {
                 row[i].u.idx = -1;
             }
-            row[i].size = sqlite3_column_bytes(m_pStmt, i);
+            row[i].size = bytes;
         }
         else
         {
