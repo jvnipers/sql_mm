@@ -32,6 +32,11 @@ void TSQLiteQueryOp::CancelThinkPart()
     m_pCon->SetDatabase(nullptr);
 }
 
+void TSQLiteQueryOp::SetError(const char *error)
+{
+    strncopy(m_szError, error, sizeof(m_szError));
+}
+
 void TSQLiteQueryOp::RunThinkPart()
 {
     if (m_szError[0])

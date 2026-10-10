@@ -48,6 +48,11 @@ void TMySQLQueryOp::RunThreadPart()
     m_pQuery = new CMySQLQuery(m_pCon, res);
 }
 
+void TMySQLQueryOp::SetError(const char *error)
+{
+    V_strncpy(m_szError, error, sizeof m_szError);
+}
+
 void TMySQLQueryOp::RunThinkPart()
 {
     if (m_szError[0])

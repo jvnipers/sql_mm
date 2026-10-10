@@ -89,13 +89,14 @@ void MySQLConnection::Connect(ConnectCallbackFunc callback)
 
 void MySQLConnection::Query(char *query, QueryCallbackFunc callback)
 {
+    TMySQLQueryOp *op = new TMySQLQueryOp(this, std::string(query), callback);
+
     if (!m_pDatabase)
     {
-        Warning("Failed querying a disconnected database (%s).\n", m_info.host);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
-
-    TMySQLQueryOp *op = new TMySQLQueryOp(this, std::string(query), callback);
 
     AddToThreadQueue(op);
 }
@@ -114,26 +115,29 @@ void MySQLConnection::Query(const char *query, QueryCallbackFunc callback, ...)
     std::vsnprintf(zc.data(), zc.size(), query, args);
     va_end(args);
 
+    TMySQLQueryOp *op = new TMySQLQueryOp(this, std::string(zc.data(), zc.size()), callback);
+
     if (!m_pDatabase)
     {
-        Warning("Failed querying a disconnected database (%s).\n", m_info.host);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
-
-    TMySQLQueryOp *op = new TMySQLQueryOp(this, std::string(zc.data(), zc.size()), callback);
 
     AddToThreadQueue(op);
 }
 
 void MySQLConnection::ExecuteTransaction(Transaction txn, TransactionSuccessCallbackFunc success, TransactionFailureCallbackFunc failure)
 {
+    TMySQLTransactOp *op = new TMySQLTransactOp(this, txn, success, failure);
+
     if (!m_pDatabase)
     {
-        Warning("Failed executing a transaction on a disconnected database (%s).\n", m_info.host);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
 
-    TMySQLTransactOp *op = new TMySQLTransactOp(this, txn, success, failure);
     AddToThreadQueue(op);
 }
 
@@ -218,6 +222,13 @@ void MySQLConnection::AddToThreadQueue(ThreadOperation *threadOperation)
         m_threadQueue.push(threadOperation);
         m_QueueEvent.notify_one();
     }
+}
+
+// Hands an op that never needs the worker thread straight to RunFrame, so its callback still fires on a later frame.
+void MySQLConnection::AddToThinkQueue(ThreadOperation *threadOperation)
+{
+    std::lock_guard<std::mutex> lock(m_ThinkLock);
+    m_ThinkQueue.push(threadOperation);
 }
 
 unsigned int MySQLConnection::GetInsertID()

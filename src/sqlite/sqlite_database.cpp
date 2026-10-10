@@ -58,12 +58,14 @@ void SqConnection::Connect(ConnectCallbackFunc callback)
 
 void SqConnection::Query(char *query, QueryCallbackFunc callback)
 {
+    TSQLiteQueryOp *op = new TSQLiteQueryOp(this, std::string(query), callback);
+
     if (!m_pDatabase)
     {
-        Warning("Failed querying the database at %s.\n", info.database);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
-    TSQLiteQueryOp *op = new TSQLiteQueryOp(this, std::string(query), callback);
 
     AddToThreadQueue(op);
 }
@@ -82,26 +84,29 @@ void SqConnection::Query(const char *query, QueryCallbackFunc callback, ...)
     std::vsnprintf(zc.data(), zc.size(), query, args);
     va_end(args);
 
+    TSQLiteQueryOp *op = new TSQLiteQueryOp(this, std::string(zc.data(), zc.size()), callback);
+
     if (!m_pDatabase)
     {
-        Warning("Failed querying the database at %s.\n", info.database);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
-
-    TSQLiteQueryOp *op = new TSQLiteQueryOp(this, std::string(zc.data(), zc.size()), callback);
 
     AddToThreadQueue(op);
 }
 
 void SqConnection::ExecuteTransaction(Transaction txn, TransactionSuccessCallbackFunc success, TransactionFailureCallbackFunc failure)
 {
+    TSQLiteTransactOp *op = new TSQLiteTransactOp(this, txn, success, failure);
+
     if (!m_pDatabase)
     {
-        Warning("Failed executing a transaction on the database at %s.\n", info.database);
+        op->SetError("Database is not connected");
+        AddToThinkQueue(op);
         return;
     }
 
-    TSQLiteTransactOp *op = new TSQLiteTransactOp(this, txn, success, failure);
     AddToThreadQueue(op);
 }
 
@@ -217,4 +222,11 @@ void SqConnection::AddToThreadQueue(ThreadOperation *threadOperation)
         m_threadQueue.push(threadOperation);
         m_QueueEvent.notify_one();
     }
+}
+
+// Hands an op that never needs the worker thread straight to RunFrame, so its callback still fires on a later frame.
+void SqConnection::AddToThinkQueue(ThreadOperation *threadOperation)
+{
+    std::lock_guard<std::mutex> lock(m_ThinkLock);
+    m_ThinkQueue.push(threadOperation);
 }

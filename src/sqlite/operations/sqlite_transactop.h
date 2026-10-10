@@ -19,6 +19,7 @@ public:
     void RunThreadPart();
     void CancelThinkPart();
     void RunThinkPart();
+    void SetError(const char *error);
 
 private:
     SqConnection *m_pCon;

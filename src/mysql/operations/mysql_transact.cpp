@@ -48,6 +48,11 @@ void TMySQLTransactOp::CancelThinkPart()
     m_pCon->SetDatabase(nullptr);
 }
 
+void TMySQLTransactOp::SetError(const char *error)
+{
+    V_strncpy(m_szError, error, sizeof m_szError);
+}
+
 void TMySQLTransactOp::RunThinkPart()
 {
     if (!m_szError[0])

@@ -48,6 +48,11 @@ void TSQLiteTransactOp::CancelThinkPart()
     m_pCon->SetDatabase(nullptr);
 }
 
+void TSQLiteTransactOp::SetError(const char *error)
+{
+    strncopy(m_szError, error, sizeof(m_szError));
+}
+
 void TSQLiteTransactOp::RunThinkPart()
 {
     if (!m_szError[0])

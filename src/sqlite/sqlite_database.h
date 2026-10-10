@@ -48,6 +48,7 @@ public:
 private:
     void ThreadRun();
     void AddToThreadQueue(ThreadOperation *threadOperation);
+    void AddToThinkQueue(ThreadOperation *threadOperation);
 
     std::queue<ThreadOperation *> m_threadQueue;
     std::queue<ThreadOperation *> m_ThinkQueue;
