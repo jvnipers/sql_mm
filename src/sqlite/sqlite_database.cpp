@@ -162,7 +162,8 @@ std::string SqConnection::Escape(const char *string)
 SqQuery *SqConnection::PrepareQuery(const char *query, char *error, size_t maxlength, int *errCode)
 {
     sqlite3_stmt *stmt = NULL;
-    if ((m_LastErrorCode = sqlite3_prepare_v2(m_pDatabase, query, -1, &stmt, NULL)) != SQLITE_OK || !stmt)
+    const char *tail = NULL;
+    if ((m_LastErrorCode = sqlite3_prepare_v2(m_pDatabase, query, -1, &stmt, &tail)) != SQLITE_OK || !stmt)
     {
         const char *msg;
         if (m_LastErrorCode != SQLITE_OK)
@@ -178,6 +179,23 @@ SqQuery *SqConnection::PrepareQuery(const char *query, char *error, size_t maxle
         {
             strncopy(error, msg, maxlength);
         }
+        m_LastError.assign(msg);
+        return NULL;
+    }
+
+    // Only the first statement gets compiled, so reject the query instead of silently skipping the rest.
+    // Preparing a tail of only whitespace, semicolons or comments succeeds with no statement.
+    sqlite3_stmt *next = NULL;
+    if (sqlite3_prepare_v2(m_pDatabase, tail, -1, &next, NULL) != SQLITE_OK || next)
+    {
+        sqlite3_finalize(next);
+        sqlite3_finalize(stmt);
+        const char *msg = "Only one statement per query is supported";
+        if (error)
+        {
+            strncopy(error, msg, maxlength);
+        }
+        m_LastErrorCode = SQLITE_ERROR;
         m_LastError.assign(msg);
         return NULL;
     }
