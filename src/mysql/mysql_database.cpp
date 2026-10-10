@@ -257,7 +257,15 @@ std::string MySQLConnection::Escape(char *string)
     size_t size = strlen(string);
     char *buffer = new char[size * 2 + 1];
 
-    mysql_real_escape_string(m_pDatabase, buffer, string, size);
+    if (m_pDatabase)
+    {
+        mysql_real_escape_string(m_pDatabase, buffer, string, size);
+    }
+    else
+    {
+        // No connection to take the charset from yet; this matches the real escape for UTF-8 and latin1.
+        mysql_escape_string(buffer, string, size);
+    }
 
     std::string out(buffer);
     delete[] buffer;
