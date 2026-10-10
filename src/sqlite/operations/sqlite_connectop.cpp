@@ -3,16 +3,6 @@
 #include "filesystem.h"
 #include "bufferstring.h"
 
-int busy_handler(void *unused1, int unused2)
-{
-#if defined PLATFORM_WINDOWS
-    Sleep(100);
-#elif defined PLATFORM_POSIX
-    usleep(100000);
-#endif
-    return 1;
-}
-
 void TSQLiteConnectOp::RunThreadPart()
 {
     m_szError[0] = '\0';
@@ -42,7 +32,9 @@ void TSQLiteConnectOp::RunThreadPart()
         return;
     }
 
-    sqlite3_busy_handler(sql, busy_handler, NULL);
+    // Retry while another connection holds the file lock, but give up eventually: the worker would otherwise
+    // wait forever, and Destroy() and unloading wait for the worker.
+    sqlite3_busy_timeout(sql, 10000);
 
     m_pDatabase = sql;
 }
