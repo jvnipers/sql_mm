@@ -7,9 +7,15 @@
 
 class ISQLQuery;
 
+// All callbacks run on the game thread, on a frame after the call that queued them.
+// Query objects (and their result sets) are owned by SQLMM and freed as soon as the callback returns:
+// read everything you need inside the callback and don't keep the pointers.
+
 typedef std::function<void(bool)> ConnectCallbackFunc;
+// The query is nullptr if it failed or the connection has no database; the error is printed to the console.
 typedef std::function<void(ISQLQuery *)> QueryCallbackFunc;
 typedef std::function<void(std::vector<ISQLQuery *>)> TransactionSuccessCallbackFunc;
+// Receives the error and the index of the failing query, or -1 if the failure wasn't tied to one query.
 typedef std::function<void(std::string, int)> TransactionFailureCallbackFunc;
 
 struct Transaction
