@@ -124,20 +124,26 @@ void SqConnection::Destroy()
 
 void SqConnection::RunFrame()
 {
-    if (m_bDestroyed || !m_ThinkQueue.size())
-    {
-        return;
-    }
-
-    ThreadOperation *op;
+    size_t count;
     {
         std::lock_guard<std::mutex> lock(m_ThinkLock);
-        op = m_ThinkQueue.front();
-        m_ThinkQueue.pop();
+        count = m_ThinkQueue.size();
     }
 
-    op->RunThinkPart();
-    delete op;
+    // Only the ops finished before this frame, so a callback chain of fast queries can't stall the frame.
+    // A callback may Destroy() the connection; its remaining ops are cancelled by the destructor.
+    for (; count > 0 && !m_bDestroyed; count--)
+    {
+        ThreadOperation *op;
+        {
+            std::lock_guard<std::mutex> lock(m_ThinkLock);
+            op = m_ThinkQueue.front();
+            m_ThinkQueue.pop();
+        }
+
+        op->RunThinkPart();
+        delete op;
+    }
 }
 
 std::string SqConnection::Escape(char *string)
