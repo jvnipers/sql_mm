@@ -34,6 +34,10 @@ Example:
 
 Interface definition can be found in `src/public`.
 
+> [!WARNING]
+> Unloading SQLMM destroys every connection it created. Plugins that use SQLMM must be unloaded first, or at least stop
+> using their `ISQLConnection` pointers, since those pointers are invalid once SQLMM is gone.
+
 ## Compilation
 
 ### Requirements
