@@ -43,9 +43,20 @@ void TMySQLQueryOp::RunThreadPart()
     if (mysql_field_count(pDatabase))
     {
         res = mysql_store_result(pDatabase);
+        if (!res)
+        {
+            V_snprintf(m_szError, sizeof m_szError, "MySQL query error: %s\n", mysql_error(pDatabase));
+            return;
+        }
     }
 
     m_pQuery = new CMySQLQuery(m_pCon, res);
+    if (mysql_errno(pDatabase))
+    {
+        V_snprintf(m_szError, sizeof m_szError, "MySQL query error: %s\n", mysql_error(pDatabase));
+        delete m_pQuery;
+        m_pQuery = nullptr;
+    }
 }
 
 void TMySQLQueryOp::SetError(const char *error)

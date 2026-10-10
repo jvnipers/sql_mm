@@ -94,5 +94,13 @@ CMySQLQuery *TMySQLTransactOp::DoQuery(const char *query)
             return NULL;
         }
     }
-    return new CMySQLQuery(m_pCon, res);
+
+    auto pQuery = new CMySQLQuery(m_pCon, res);
+    if (mysql_errno(pDatabase))
+    {
+        V_snprintf(m_szError, sizeof m_szError, "MySQL query error: %s\n", mysql_error(pDatabase));
+        delete pQuery;
+        return NULL;
+    }
+    return pQuery;
 }

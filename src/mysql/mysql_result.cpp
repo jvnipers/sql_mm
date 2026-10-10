@@ -225,9 +225,15 @@ CMySQLQuery::CMySQLQuery(MySQLConnection *db, MYSQL_RES *res) : m_pDatabase(db),
     m_affectedRows = m_pDatabase->GetAffectedRows();
 
     auto pDatabase = m_pDatabase->GetDatabase();
+    // Stops at the first failed result; the caller checks mysql_errno() to report it.
     while (mysql_more_results(pDatabase) && mysql_next_result(pDatabase) == 0)
     {
-        m_pendingResults.push_back(mysql_store_result(pDatabase));
+        MYSQL_RES *pending = mysql_store_result(pDatabase);
+        if (!pending && mysql_field_count(pDatabase))
+        {
+            break;
+        }
+        m_pendingResults.push_back(pending);
     }
 }
 
