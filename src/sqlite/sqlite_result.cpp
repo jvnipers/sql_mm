@@ -125,8 +125,13 @@ const char *SqResults::GetString(unsigned int columnId, size_t *length)
     }
     else if (field->type == SQLITE_FLOAT)
     {
-        char number[24];
-        size_t size = UTIL_Format(number, sizeof(number), "%f", field->u.d);
+        // Shortest of 15 or 17 significant digits that parses back to the same double.
+        char number[32];
+        size_t size = UTIL_Format(number, sizeof(number), "%.15g", field->u.d);
+        if (strtod(number, nullptr) != field->u.d)
+        {
+            size = UTIL_Format(number, sizeof(number), "%.17g", field->u.d);
+        }
         m_NumberStrings.emplace_back(number, size);
         if (length)
         {
